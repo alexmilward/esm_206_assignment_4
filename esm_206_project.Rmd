@@ -1,0 +1,114 @@
+---
+title: "Interesting Title Updated 10/12"
+author: "Alex Milward"
+date: "11/11/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+```
+
+### Introduction
+
+*write introduction here instead of this filler*
+
+
+### Data and Methods
+
+*data and methods section including metadata, statistical tests, significance, and software*
+
+### Results
+
+```{r, include = FALSE}
+
+# Attach packages
+library(tidyverse)
+library(janitor)
+library(purrr)
+library(ggridges)
+library(here)
+library(hexbin)
+library(plotly)
+library(tidyr)
+
+```
+
+#### Results A
+```{r, include = FALSE}
+
+# Read in data, clean up variable names, change unknown values to "NA"
+lobster_data <- read_csv("lobster_abundance_sbc_lter.csv") %>% 
+  clean_names() %>% 
+  mutate(size_mm = replace(size_mm, size_mm == "-99999", NA))
+ 
+
+
+```
+
+```{r}
+# Group data by year ad site and summarize total counts per site from 2012-2018
+
+lobster_data_yr <- lobster_data %>% 
+  select(year, count, site) %>% 
+  group_by(year, site) %>% 
+  summarize(count_yr = sum(count)) %>% 
+  mutate(MPA = case_when(
+    site %in% c("IVEE", "NAPL") ~ "MPA",
+    site %in% c("AQUE", "MOHK", "CARP") ~ "non-MPA"))
+  
+
+```
+
+```{r}
+# Plot lobster counts per year per site 
+
+ggplot(data = lobster_data_yr, aes(x = year, y = count_yr)) +
+  geom_line(aes(color = MPA), show.legend = FALSE) +
+  geom_point(aes(color = MPA)) +
+  facet_wrap(~site) +
+  scale_x_discrete(limits = c(2012, 2014, 2016, 2018)) +
+  scale_y_continuous(limits = c(0,1000), expand = c(0,1)) +
+  labs(x = "Year",
+       y = "number of lobsters",
+       title = "Annual lobster counts by site from 2012-2018 (MILWARD)",
+       color = "Site Type",
+       caption = "Figure 1: Observed lobster abundance per site from 2012-2018") +
+  theme_minimal() +
+  theme(panel.spacing = unit(1, "lines"))
+  
+  
+```
+
+#### Results B
+
+```{r}
+# Use previously read in lobster_data, select size_mm, site, year
+# Filter data to only show observations from 2012 and 2018
+
+lobster_size_site <- lobster_data %>% 
+  select(size_mm, site, year) %>% 
+  filter(year %in% c("2012", "2018"))
+
+```
+
+
+```{r, message = FALSE}
+# Plot size distribution by site and year
+
+ggplot(data = lobster_size_site) +
+  geom_histogram(aes(x = size_mm, color = site),
+                 show.legend = FALSE, na.rm = TRUE) +
+  facet_grid(year~site, scales = "free") +
+  theme_bw() +
+  scale_y_continuous(expand = c(0,0)) +
+  scale_x_continuous(expand = c(0,0)) +
+  labs(title = "Lobster size distribution by site (MILWARD)",
+       subtitle = "2012 vs. 2018",
+       x = "lobster size (mm)",
+       y = "count",
+       caption = "Figure 2: Distribution of lobster size in millimeters across five sites (2012 & 2018)")
+```
+
+
+
